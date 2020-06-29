@@ -7,15 +7,11 @@ from Configuration import *
 from CELEnvironment import Trace, AssertMessage
 from SignalCheck import StrategyInit
 
-TIMEOUT = 10
 
 class SubmitOrder(StrategyInit):
     def __init__(self):
         self.account = None
         self.instrument = None
-        self.eventGatewayIsUp = threading.Event()
-        self.eventGatewayIsDown = threading.Event()
-        self.eventAccountIsReady = threading.Event()
         self.eventInstrumentIsReady = threading.Event()
         self.eventOrderPlaced = threading.Event()
         self.eventOrderCancelled = threading.Event()
@@ -25,26 +21,11 @@ class SubmitOrder(StrategyInit):
         self.executionTime = kwargs.get('execution_time', 1)
         self.tick = kwargs.get('tick', 1)
         self.tradeTrigger = kwargs.get('trigger', 1)
-        self.username = kwargs.get('username', '')
-        self.password = kwargs.get('password', '')
+        self.account = kwargs.get('account', 1)
         
         super(SubmitOrder, self).Init(celEnvironment, **kwargs)
 
     def Start(self):
-        Trace("Connecting to GW")
-        self.celEnvironment.cqgCEL.GWLogon(self.username, self.password)
-
-        Trace("Waiting for GW connection...")
-        AssertMessage(self.eventGatewayIsUp.wait(GATEWAYUP_TIMEOUT), "GW connection timeout!")
-
-        self.celEnvironment.cqgCEL.AccountSubscriptionLevel = constants.aslAccountUpdatesAndOrders
-        Trace("Waiting for accounts coming...")
-        AssertMessage(self.eventAccountIsReady.wait(ACCOUNT_LOGIN_TIMEOUT), "Accounts coming timeout!")
-
-        Trace("Select the first account")
-        accounts = win32com.client.Dispatch(self.celEnvironment.cqgCEL.Accounts)
-        self.account = win32com.client.Dispatch(accounts.ItemByIndex(0))
-
         Trace("{} instrument requesting...".format(self.symbol))
         self.celEnvironment.cqgCEL.NewInstrument(self.symbol)
         Trace("{} instrument waiting...".format(self.symbol))
@@ -52,16 +33,19 @@ class SubmitOrder(StrategyInit):
 
         dispatchedInstrument = win32com.client.Dispatch(self.instrument)
 
-        bestBid = dispatchedInstrument.Bid
-        AssertMessage(bestBid.IsValid, "Error! Can't set an order price due to invalid BBA")
-
-        Trace("Best bid value is {}".format(bestBid.Price))
-        orderPrice = bestBid.Price + self.tick
-        Trace("Order price to submit is {}".format(orderPrice))
-
         if self.tradeTrigger == 1:
+            bestBid = dispatchedInstrument.Bid
+            AssertMessage(bestBid.IsValid, "Error! Can't set an order price due to invalid BBA")
+            Trace("Best bid value is {}".format(bestBid.Price))
+            orderPrice = bestBid.Price + self.tick
+            Trace("Order price to submit is {}".format(orderPrice))
             orderSide = constants.osdBuy
         elif self.tradeTrigger == -1:
+            bestAsk = dispatchedInstrument.Ask
+            AssertMessage(bestAsk.IsValid, "Error! Can't set an order price due to invalid BBA")
+            Trace("Best ask value is {}".format(bestAsk.Price))
+            orderPrice = bestAsk.Price + self.tick
+            Trace("Order price to submit is {}".format(orderPrice))
             orderSide = constants.osdSell
 
         Trace("Create limit order")
@@ -87,28 +71,6 @@ class SubmitOrder(StrategyInit):
             minutes_passed = minutes_passed + 1
             if self.leftOrderCount == 0:
                 break
-
-        Trace("Logoff from GW")
-        self.eventGatewayIsDown.clear()
-        self.celEnvironment.cqgCEL.GWLogoff()
-        AssertMessage(self.eventGatewayIsDown.wait(GATEWAYDOWN_TIMEOUT), "GW disconnection timeout!")
-
-        Trace("Done!")
-
-    def OnGWConnectionStatusChanged(self, connectionStatus):
-        if connectionStatus == constants.csConnectionUp:
-            Trace("GW connection is UP!")
-            self.eventGatewayIsUp.set()
-        if connectionStatus == constants.csConnectionDown:
-            Trace("GW connection is DOWN!")
-            self.eventGatewayIsDown.set()
-
-    def OnAccountChanged(self, change, account, position):
-        if change != constants.actAccountsReloaded:
-            return
-
-        Trace("Accounts are ready!")
-        self.eventAccountIsReady.set()
 
     def OnInstrumentResolved(self, symbol, instrument, cqgError):
         if cqgError:
