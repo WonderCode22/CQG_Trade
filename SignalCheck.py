@@ -1,6 +1,7 @@
 
 import threading
 import win32com.client
+from Configuration import *
 from CELEnvironment import CELSinkBase, AssertMessage, Trace
 
 
@@ -26,7 +27,7 @@ class SignalCheck(StrategyInit):
         Trace("{} instrument requesting...".format(self.symbol))
         self.celEnvironment.cqgCEL.NewInstrument(self.symbol)
         Trace("{} instrument waiting...".format(self.symbol))
-        AssertMessage(self.eventInstrumentIsReady.wait(10), "Instrument resolution timeout!")
+        AssertMessage(self.eventInstrumentIsReady.wait(INSTRUMENT_SETUP_TIMEOUT), "Instrument resolution timeout!")
 
         dispatchedInstrument = win32com.client.Dispatch(self.instrument)
         bestBid = dispatchedInstrument.Bid

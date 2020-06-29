@@ -31,19 +31,17 @@ class RealTimeMarketDataReceiving(CELSinkBase):
     def __init__(self):
         self.eventDone = threading.Event()
 
-    def Init(self, celEnvironment, symbols):
+    def Init(self, celEnvironment):
         self.celEnvironment = celEnvironment
-        self.symbols = symbols
 
     def Start(self):
-        while True:
-            for i in range(len(self.symbols)):
-                symbol = self.symbols[i]
-                Trace("Request realtime market data for {}".format(symbol))
-                self.celEnvironment.cqgCEL.NewInstrument(symbol)
+        # for i in range(1, 4):
+        #     symbol = "CLE?{}".format(i)
+        symbol = 'F.US.FEPP'
+        Trace("Request realtime market data for {}".format(symbol))
+        self.celEnvironment.cqgCEL.NewInstrument(symbol)
 
-            self.eventDone.wait(10)
-            time.sleep(60)
+        self.eventDone.wait(10)
 
     def OnDataError(self, cqgError, errorDescription):
         if cqgError is not None:
@@ -61,10 +59,21 @@ class RealTimeMarketDataReceiving(CELSinkBase):
             return
 
         instrument = win32com.client.Dispatch(cqgInstrument)
+        Trace("OnInstrumentResolved: Symbol: {} Instrument full name: {}".format(symbol, instrument.FullName))
+        instrument.DataSubscriptionLevel = win32com.client.constants.dsQuotesAndBBA
+        Trace("OnInstrumentResolved: DataSubscriptionLevel is changed")
+        bestBid = instrument.Ask
+        AssertMessage(bestBid.IsValid, "Error! Can't set an order price due to invalid BBA")
+        Trace("Best Bid for {} is {}".format(instrument.FullName, bestBid.Price))
 
-        if instrument.Bid.IsValid:
-            trade_data[symbol].append({'bid': instrument.Bid.Price, 'ask': instrument.Ask.Price})
-            Trace("{} data: {}".format(symbol, trade_data[symbol]))
+    def OnInstrumentChanged(self, cqgInstrument, cqgQuotes, cqgInstrumentProperties):
+        instrument = win32com.client.Dispatch(cqgInstrument)
+        quotes = win32com.client.Dispatch(cqgQuotes)
+        Trace("New quotes for {}".format(instrument.FullName))
+        for quote in quotes:
+            if (quote.IsValid):
+                Trace("  Type: {} Price: {} Volume: {} Time: {}".format(QuoteType2String(quote.Type), quote.Price,
+                                                                        quote.Volume, quote.Timestamp))
 
 
 if __name__ == '__main__':
@@ -78,7 +87,7 @@ if __name__ == '__main__':
     try:
         sample = celEnvironment.Init(RealTimeMarketDataReceiving, None)
         if not celEnvironment.errorHappened:
-            sample.Init(celEnvironment, symbols)
+            sample.Init(celEnvironment)
             sample.Start()
     except Exception as e:
         Trace("Exception: {}".format(str(e)))
