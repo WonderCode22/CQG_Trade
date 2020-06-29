@@ -87,8 +87,8 @@ if __name__ == '__main__':
         "instrument_name": "F.US.ZUS", # instrument symbol
         "signal_level": 1, # Bid/Ask value to be compared to check if condition is true or false.
         "signal_direction": '> by 10%', # checking method
-        "signal_time": "1118",  # trade checking time. %H%M
-        "trade_time": "1118",  # trade time if condition is true. %H%M
+        "signal_time": "1619",  # trade checking time. %H%M
+        "trade_time": "1619",  # trade time if condition is true. %H%M
         "order_count": 20,
         "execution_window_time": 5,
         "trade_trigger": 1,
@@ -101,8 +101,8 @@ if __name__ == '__main__':
         "instrument_name": "F.US.ZUA",  # instrument symbol
         "signal_level": 1,  # Bid/Ask value to be compared to check if condition is true or false.
         "signal_direction": '> by 10%',  # checking method
-        "signal_time": "1118",  # trade checking time. %H%M
-        "trade_time": "1119",  # trade time if condition is true. %H%M
+        "signal_time": "1619",  # trade checking time. %H%M
+        "trade_time": "1620",  # trade time if condition is true. %H%M
         "order_count": 10,
         "execution_window_time": 10,
         "trade_trigger": -1,

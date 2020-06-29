@@ -35,6 +35,7 @@ class GatewayHandle(StrategyInit):
         Trace("Select the first account")
         accounts = win32com.client.Dispatch(self.celEnvironment.cqgCEL.Accounts)
         self.account = win32com.client.Dispatch(accounts.ItemByIndex(0))
+        return self.account
 
     def Close(self):
         Trace("Logoff from GW")
