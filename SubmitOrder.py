@@ -12,6 +12,9 @@ class SubmitOrder(StrategyInit):
     def __init__(self):
         self.account = None
         self.instrument = None
+        self.eventGatewayIsUp = threading.Event()
+        self.eventGatewayIsDown = threading.Event()
+        self.eventAccountIsReady = threading.Event()
         self.eventInstrumentIsReady = threading.Event()
         self.eventOrderPlaced = threading.Event()
         self.eventOrderCancelled = threading.Event()
@@ -21,11 +24,26 @@ class SubmitOrder(StrategyInit):
         self.executionTime = kwargs.get('execution_time', 1)
         self.tick = kwargs.get('tick', 1)
         self.tradeTrigger = kwargs.get('trigger', 1)
-        self.account = kwargs.get('account', 1)
+        self.username = kwargs.get('username', 1)
+        self.password = kwargs.get('password', 1)
         
         super(SubmitOrder, self).Init(celEnvironment, **kwargs)
 
     def Start(self):
+        Trace("Connecting to GW")
+        self.celEnvironment.cqgCEL.GWLogon(self.username, self.password)
+
+        Trace("Waiting for GW connection...")
+        AssertMessage(self.eventGatewayIsUp.wait(GATEWAYUP_TIMEOUT), "GW connection timeout!")
+
+        self.celEnvironment.cqgCEL.AccountSubscriptionLevel = constants.aslAccountUpdatesAndOrders
+        Trace("Waiting for accounts coming...")
+        AssertMessage(self.eventAccountIsReady.wait(ACCOUNT_LOGIN_TIMEOUT), "Accounts coming timeout!")
+
+        Trace("Select the first account")
+        accounts = win32com.client.Dispatch(self.celEnvironment.cqgCEL.Accounts)
+        self.account = win32com.client.Dispatch(accounts.ItemByIndex(0))
+
         Trace("{} instrument requesting...".format(self.symbol))
         self.celEnvironment.cqgCEL.NewInstrument(self.symbol)
         Trace("{} instrument waiting...".format(self.symbol))
@@ -72,6 +90,28 @@ class SubmitOrder(StrategyInit):
             if self.leftOrderCount == 0:
                 break
 
+    def Close(self):
+        Trace("Logoff from GW")
+        self.eventGatewayIsDown.clear()
+        self.celEnvironment.cqgCEL.GWLogoff()
+        AssertMessage(self.eventGatewayIsDown.wait(GATEWAYDOWN_TIMEOUT), "GW disconnection timeout!")
+        Trace("Done!")
+
+    def OnGWConnectionStatusChanged(self, connectionStatus):
+        if connectionStatus == constants.csConnectionUp:
+            Trace("GW connection is UP!")
+            self.eventGatewayIsUp.set()
+        if connectionStatus == constants.csConnectionDown:
+            Trace("GW connection is DOWN!")
+            self.eventGatewayIsDown.set()
+
+    def OnAccountChanged(self, change, account, position):
+        if change != constants.actAccountsReloaded:
+            return
+
+        Trace("Accounts are ready!")
+        self.eventAccountIsReady.set()
+
     def OnInstrumentResolved(self, symbol, instrument, cqgError):
         if cqgError:
             dispatchedCQGError = win32com.client.Dispatch(cqgError)
@@ -93,16 +133,18 @@ class SubmitOrder(StrategyInit):
         properties = win32com.client.Dispatch(dispatchedOrder.Properties)
         gwStatus = properties(constants.opGWStatus)
         quantity = properties(constants.opQuantity)
-        instrument = properties(constants.opInstrumentName)
+        instrumentName = properties(constants.opInstrumentName)
+        Trace("Instrument Full Name: {}, Symbol: {}".format(instrumentName, self.symbol))
         limitPrice = properties(constants.opLimitPrice)
 
-        if gwStatus.Value == constants.osFilled:
-            filledQuantity = properties(constants.opFilledQuantity)
-            self.leftOrderCount -= filledQuantity.Value
-            Trace("{} orders are filled and {} orders are left".format(filledQuantity.Value, self.leftOrderCount))
-        else:
-            Trace("OnOrderChanged: change type: {}; GW status: {}; Quantity: {}; Instrument: {}; Price: {};"
-                .format(changeType, gwStatus, quantity, instrument, limitPrice))
+        if self.symbol in f"{instrumentName}":
+            if gwStatus.Value == constants.osFilled:
+                filledQuantity = properties(constants.opFilledQuantity)
+                self.leftOrderCount -= filledQuantity.Value
+                Trace("{} orders are filled and {} orders are left".format(filledQuantity.Value, self.leftOrderCount))
+            else:
+                Trace("OnOrderChanged: change type: {}; GW status: {}; Quantity: {}; Instrument: {}; Price: {};"
+                    .format(changeType, gwStatus, quantity, instrumentName, limitPrice))
 
         if changeType != constants.ctChanged:
             return
