@@ -1,0 +1,61 @@
+{
+    "data": [
+        {
+            "strategy": "S1",
+            "symbol": "F.US.OBX",
+            "order_type": 1,
+            "trade_time": "2020-07-01 14:32:00",
+            "execution_window_time": 5,
+            "order_amount": 100,
+            "tick": 10,
+            "signal_check": [
+                {
+                    "time": "2020-07-01 14:31:00",
+                    "cond": 20000,
+                    "operator": ">",
+                    "price": 719.8,
+                    "result": 1
+                },
+                {
+                    "time": "2020-07-01 14:31:00",
+                    "cond": 1,
+                    "operator": "<",
+                    "price": 719.6,
+                    "result": 1
+                }
+            ]
+        },
+        {
+            "strategy": "S2",
+            "symbol": "F.US.ZUA",
+            "order_type": -1,
+            "trade_time": "2020-07-01 14:32:00",
+            "execution_window_time": 5,
+            "order_amount": 10,
+            "tick": 0,
+            "signal_check": [
+                {
+                    "time": "2020-07-01 14:31:00",
+                    "cond": 20000,
+                    "operator": ">",
+                    "price": 0.6921,
+                    "result": 1
+                },
+                {
+                    "time": "2020-07-01 14:30:00",
+                    "cond": 1,
+                    "operator": "<",
+                    "price": 0.6921,
+                    "result": 0
+                },
+                {
+                    "time": "2020-07-01 14:31:00",
+                    "cond": 1,
+                    "operator": "<",
+                    "price": 0.692,
+                    "result": 0
+                }
+            ]
+        }
+    ]
+}

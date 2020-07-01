@@ -1,139 +1,123 @@
 import os
-import time
-import datetime
-from multiprocessing import Pool
+import json
 import threading
 from apscheduler.schedulers.blocking import BlockingScheduler
 from CELEnvironment import CELEnvironment, Trace, pythoncom
 from SignalCheck import SignalCheck
 from SubmitOrder import SubmitOrder
-from Gateway import GatewayHandle
 
 
 class OrderThread(threading.Thread):
-    def __init__(self, tradeProperties):
+    def __init__(self, index, properties, credentials):
         threading.Thread.__init__(self)
-        self.properties = tradeProperties
+        self.index = index
+        self.properties = properties
+        self.credentials = credentials
 
     def run(self):
-        signalCheckTimeStamp = datetime.datetime.strptime(self.properties['signal_time'], '%H%M')
-        tradeTimeStamp = datetime.datetime.strptime(self.properties['trade_time'], '%H%M')
-        timeDelta = (tradeTimeStamp - signalCheckTimeStamp).seconds
-
         sched = BlockingScheduler()
+
+        for i in range(len(self.properties['signal_check'])):
+            check_data = self.properties['signal_check'][i]
+            sched.add_job(signal_check_runner,
+                          'date',
+                          run_date=check_data['time'],
+                          timezone='UTC',
+                          args=[SignalCheck,
+                                self.properties['symbol'],
+                                self.properties['order_type'],
+                                check_data]
+            )
+
         sched.add_job(trade_runner,
-                      'cron',
-                      hour=self.properties['signal_time'][0:2],
-                      minute=self.properties['signal_time'][2:],
+                      'date',
+                      run_date=self.properties['trade_time'],
                       timezone='UTC',
-                      args=[SignalCheck, SubmitOrder, timeDelta, self.properties])
+                      args=[SubmitOrder, self.index, self.credentials]
+                      )
         sched.start()
 
-def trade_runner(signalCheckCls, submitOrderCls, timeDelta, tradeProperties):
+def signal_check_runner(signalCheckCls, symbol, trigger, conditionProperties):
     pythoncom.CoInitialize()
     signalCelEnvironment = CELEnvironment()
     try:
         signalCheckInstance = signalCelEnvironment.Init(signalCheckCls, None)
         if not signalCelEnvironment.errorHappened:
             signalCheckInstance.Init(signalCelEnvironment,
-                                     symbol=tradeProperties['instrument_name'],
-                                     signal_level=tradeProperties['signal_level'],
-                                     operator=tradeProperties['signal_direction'],
-                                     trigger=tradeProperties['trade_trigger'])
-            result = signalCheckInstance.Start()
-            print(result)
+                                     symbol=symbol,
+                                     signal_level=conditionProperties['cond'],
+                                     operator=conditionProperties['operator'],
+                                     trigger=trigger)
+            result, trade_price = signalCheckInstance.Start()
+            conditionProperties['price'] = trade_price
             if result:
-                orderCelEnvironment = CELEnvironment()
-                try:
-                    time.sleep(timeDelta) # Wait until trade_time (signalTime + timeDelta = tradeTime)
-                    submitOrderInstance = orderCelEnvironment.Init(submitOrderCls, None)
-                    if not orderCelEnvironment.errorHappened:
-                        submitOrderInstance.Init(orderCelEnvironment,
-                                                 symbol=tradeProperties['instrument_name'],
-                                                 order_count=tradeProperties['order_count'],
-                                                 execution_time=tradeProperties['execution_window_time'],
-                                                 trigger=tradeProperties['trade_trigger'],
-                                                 tick=tradeProperties['tick'],
-                                                 username=tradeProperties['cqg_username'],
-                                                 password=tradeProperties['cqg_password'])
-                    submitOrderInstance.Start()
-                except Exception as e:
-                    Trace("Exception: {}".format(str(e)))
-                finally:
-                    orderCelEnvironment.Shutdown()
+                conditionProperties['result'] = 1
+            else:
+                conditionProperties['result'] = 0
+            save_json_file(trade_properties)
     except Exception as e:
         Trace("Exception: {}".format(str(e)))
     finally:
         signalCelEnvironment.Shutdown()
 
-# def trade_scheduler(tradeProperties):
-#     # Calculate time delta(seconds) between tradeTime and signalCheckTime
-#     signalCheckTimeStamp = datetime.datetime.strptime(tradeProperties['signal_time'], '%H%M')
-#     tradeTimeStamp = datetime.datetime.strptime(tradeProperties['trade_time'], '%H%M')
-#     timeDelta = (tradeTimeStamp - signalCheckTimeStamp).seconds
-#
-#     sched = BlockingScheduler()
-#     sched.add_job(trade_runner,
-#                   'cron',
-#                   hour=tradeProperties['signal_time'][0:2],
-#                   minute=tradeProperties['signal_time'][2:],
-#                   timezone='UTC',
-#                   args=[SignalCheck, SubmitOrder, timeDelta, tradeProperties])
-#     sched.start()
+def trade_runner(submitOrderCls, index, credentials):
+    tradeProperty = trade_properties[index]
+    Trace("==========================\n{}".format(tradeProperty))
+    signalCheckResult = 1
+    for ele in tradeProperty['signal_check']:
+        signalCheckResult *= ele['result']
+
+    if signalCheckResult == 1:
+        orderCelEnvironment = CELEnvironment()
+        try:
+            submitOrderInstance = orderCelEnvironment.Init(submitOrderCls, None)
+            if not orderCelEnvironment.errorHappened:
+                submitOrderInstance.Init(orderCelEnvironment,
+                                         symbol=tradeProperty['symbol'],
+                                         order_count=tradeProperty['order_amount'],
+                                         execution_time=tradeProperty['execution_window_time'],
+                                         trigger=tradeProperty['order_type'],
+                                         tick=tradeProperty['tick'],
+                                         username=credentials['cqg_username'],
+                                         password=credentials['cqg_password'])
+            submitOrderInstance.Start()
+        except Exception as e:
+            Trace("Exception: {}".format(str(e)))
+        finally:
+            orderCelEnvironment.Shutdown()
+    else:
+        Trace("{} instrument's condition doesn't meet".format(tradeProperty['symbol']))
+
+def save_json_file(data):
+    with open('demo_json.json', 'w') as f:
+        json.dump({'data': data}, f, indent=4)
 
 
 if __name__ == '__main__':
-    trade_properties1 = {
-        "instrument_name": "F.US.ZUS", # instrument symbol
-        "signal_level": 1, # Bid/Ask value to be compared to check if condition is true or false.
-        "signal_direction": '> by 10%', # checking method
-        "signal_time": "1857",  # trade checking time. %H%M
-        "trade_time": "1858",  # trade time if condition is true. %H%M
-        "order_count": 30,
-        "execution_window_time": 5,
-        "trade_trigger": 1,
-        "tick": 1,
-        "cqg_username": os.getenv('CQG_USRENAME', 'ATangSim'),
-        "cqg_password": os.getenv('CQG_PASSWORD', 'pass'),
+    credential = {
+        'cqg_username': os.getenv('CQG_USRENAME', 'ATangSim'),
+        'cqg_password': os.getenv('CQG_PASSWORD', 'pass')
     }
 
-    trade_properties2 = {
-        "instrument_name": "F.US.ZSY",  # instrument symbol
-        "signal_level": 1,  # Bid/Ask value to be compared to check if condition is true or false.
-        "signal_direction": '> by 10%',  # checking method
-        "signal_time": "1857",  # trade checking time. %H%M
-        "trade_time": "1857",  # trade time if condition is true. %H%M
-        "order_count": 10,
-        "execution_window_time": 10,
-        "trade_trigger": -1,
-        "tick": 0,
-        "cqg_username": os.getenv('CQG_USRENAME', 'ATangSim'),
-        "cqg_password": os.getenv('CQG_PASSWORD', 'pass'),
-    }
-    trade_properties = [trade_properties1, trade_properties2]
+    f = open('demo_json.json')
+    trade_properties = json.load(f)['data']
 
-    cqg_username = os.getenv('CQG_USRENAME', 'ATangSim')
-    cqg_password = os.getenv('CQG_PASSWORD', 'pass')
-
-    # p = Pool(2)
-    # p.starmap(trade_scheduler, zip((trade_properties1, trade_properties2)))
-
-    for i in range(2):
-        thread = OrderThread(trade_properties[i])
+    for idx in range(len(trade_properties)):
+        thread = OrderThread(idx, trade_properties[idx], credential)
         thread.start()
 
-    # gatewayCelEnvironment = CELEnvironment()
-    # try:
-    #     gatewayHandleInstance = gatewayCelEnvironment.Init(GatewayHandle, None)
-    #     if not gatewayCelEnvironment.errorHappened:
-    #         gatewayHandleInstance.Init(gatewayCelEnvironment,
-    #                                  username=cqg_username,
-    #                                  password=cqg_password)
-    #         cqg_account = gatewayHandleInstance.Open()
-    #
-    #
-    # except Exception as e:
-    #     Trace("Exception: {}".format(str(e)))
-    # finally:
-    #     gatewayCelEnvironment.Shutdown()
+    # control_df = pd.read_csv('demo_6_19_20.csv')  # Read in control
+    # control_df['Time_Date'] = pd.to_datetime(control_df['Time_Date'])
+    # control_df = control_df.dropna(axis=0, how='all')
 
+    # New Dataframe, tickDiff must be the same as tickDiff in control file. This is to address existing positions tickDiff
+    # tick_master_df = pd.read_csv('tick_diff_master.csv')
+
+    # strategies = control_df['Strategy'].unique()
+    # for i in range(len(strategies)):
+    #     strategy_df = control_df.loc[control_df['Strategy'] == strategies[i]]
+    #     tick_df = tick_master_df.loc[tick_master_df['Contract'] == strategy_df.iloc[0]['Contract']].groupby('Contract').mean()
+    #     strategy_df = strategy_df.merge(tick_df, how='left', on='Contract')
+    #
+    #     thread = OrderThread(strategy_df)
+    #     thread.start()

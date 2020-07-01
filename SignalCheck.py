@@ -17,9 +17,9 @@ class SignalCheck(StrategyInit):
         self.eventInstrumentIsReady = threading.Event()
 
     def Init(self, celEnvironment, **kwargs):
-        self.signalLevel = kwargs.get('signal_level', '')
-        self.tradeTrigger = kwargs.get('trigger', '')
-        self.signalDirection = kwargs.get('operator', '')
+        self.signalLevel = kwargs.get('signal_level')
+        self.tradeTrigger = kwargs.get('trigger')
+        self.signalDirection = kwargs.get('operator')
 
         super(SignalCheck, self).Init(celEnvironment, **kwargs)
 
@@ -30,14 +30,18 @@ class SignalCheck(StrategyInit):
         AssertMessage(self.eventInstrumentIsReady.wait(INSTRUMENT_SETUP_TIMEOUT), "Instrument resolution timeout!")
 
         dispatchedInstrument = win32com.client.Dispatch(self.instrument)
-        bestBid = dispatchedInstrument.Bid
-        AssertMessage(bestBid.IsValid, "Error! Can't set an order price due to invalid BBA")
-        Trace("Best bid price is {}".format(bestBid.Price))
 
-        if self.tradeTrigger != 0 and self.SignalOperationCalc(bestBid.Price, self.signalDirection):
-            return True
+        if self.tradeTrigger == 1:
+            bestTrade = dispatchedInstrument.Bid
+        elif self.tradeTrigger == -1:
+            bestTrade = dispatchedInstrument.Ask
+        AssertMessage(bestTrade.IsValid, "Error! Can't set an order price due to invalid BBA")
+        Trace("{}'s best price is {}".format(self.symbol, bestTrade.Price))
 
-        return False
+        if self.tradeTrigger != 0 and self.SignalOperationCalc(bestTrade.Price, self.signalDirection):
+            return True, bestTrade.Price
+
+        return False, bestTrade.Price
 
     def OnInstrumentResolved(self, symbol, instrument, cqgError):
         if cqgError:
@@ -57,16 +61,16 @@ class SignalCheck(StrategyInit):
             signalBid = signalBid * timesValue
 
         if operator == '>':
-            if signalBid > self.signalLevel:
+            if self.signalLevel > signalBid:
                 return True
         elif operator == '>=':
-            if signalBid >= self.signalLevel:
+            if self.signalLevel >= signalBid:
                 return True
         elif operator == '<':
-            if signalBid < self.signalLevel:
+            if self.signalLevel < signalBid:
                 return True
         elif operator == '<=':
-            if signalBid <= self.signalLevel:
+            if self.signalLevel <= signalBid:
                 return True
 
         return False
