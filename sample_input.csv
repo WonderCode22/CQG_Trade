@@ -1,0 +1,2 @@
+strategy,symbol,order_type,trade_time,execution_window_time,order_amount,tick,sc1_symbol,sc1_time,sc1_cond,sc1_operator,sc1_price,sc1_result,sc2_symbol,sc2_time,sc2_cond,sc2_operator,sc2_price,sc2_result,sc3_symbol,sc3_time,sc3_cond,sc3_operator,sc3_price,sc3_result
+S1,DXEZ20,-1,2020-07-14 05:50:21,10,100,0.01,DXEU20,2020-07-14 05:50:00,1000,>,0,0,null,null,null,null,null,null,null,null,null,null,null,null

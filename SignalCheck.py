@@ -27,15 +27,15 @@ class SignalCheck(StrategyInit):
         Trace("{} instrument requesting...".format(self.symbol))
         self.celEnvironment.cqgCEL.NewInstrument(self.symbol)
         Trace("{} instrument waiting...".format(self.symbol))
-        AssertMessage(self.eventInstrumentIsReady.wait(INSTRUMENT_SETUP_TIMEOUT), "Instrument resolution timeout!")
+        AssertMessage(self.eventInstrumentIsReady.wait(INSTRUMENT_SETUP_TIMEOUT), f"{self.symbol} Instrument resolution timeout!")
 
         dispatchedInstrument = win32com.client.Dispatch(self.instrument)
 
         if self.tradeTrigger == 1:
-            bestTrade = dispatchedInstrument.Bid
-        elif self.tradeTrigger == -1:
             bestTrade = dispatchedInstrument.Ask
-        AssertMessage(bestTrade.IsValid, "Error! Can't set an order price due to invalid BBA")
+        elif self.tradeTrigger == -1:
+            bestTrade = dispatchedInstrument.Bid
+        AssertMessage(bestTrade.IsValid, f"Error! Can't set {self.symbol}'s order price due to invalid BBA")
         Trace("{}'s best price is {}".format(self.symbol, bestTrade.Price))
 
         if self.tradeTrigger != 0 and self.SignalOperationCalc(bestTrade.Price, self.signalDirection):

@@ -1,10 +1,11 @@
 # The sample demonstrates how to place an order with Good Till Date property set.
 import time
+import math
 import threading
 import win32com.client
 from win32com.client import constants
 from Configuration import *
-from CELEnvironment import Trace, AssertMessage
+from CELEnvironment import Trace, AssertMessage, logger
 from SignalCheck import StrategyInit
 
 
@@ -26,7 +27,7 @@ class SubmitOrder(StrategyInit):
         self.tradeTrigger = kwargs.get('trigger', 1)
         self.username = kwargs.get('username', 1)
         self.password = kwargs.get('password', 1)
-        
+
         super(SubmitOrder, self).Init(celEnvironment, **kwargs)
 
     def Start(self):
@@ -47,21 +48,22 @@ class SubmitOrder(StrategyInit):
         Trace("{} instrument requesting...".format(self.symbol))
         self.celEnvironment.cqgCEL.NewInstrument(self.symbol)
         Trace("{} instrument waiting...".format(self.symbol))
-        AssertMessage(self.eventInstrumentIsReady.wait(INSTRUMENT_SETUP_TIMEOUT), "Instrument resolution timeout!")
+        AssertMessage(self.eventInstrumentIsReady.wait(INSTRUMENT_SETUP_TIMEOUT),
+                      f"{self.symbol} Instrument resolution timeout!")
 
         dispatchedInstrument = win32com.client.Dispatch(self.instrument)
 
         if self.tradeTrigger == 1:
-            bestBid = dispatchedInstrument.Bid
-            AssertMessage(bestBid.IsValid, "Error! Can't set an order price due to invalid BBA")
-            Trace("Best bid value is {}".format(bestBid.Price))
+            bestBid = dispatchedInstrument.Ask
+            AssertMessage(bestBid.IsValid, f"Error! Can't set {self.symbol}'s order price due to invalid BBA")
+            Trace("Best ask value is {}".format(bestBid.Price))
             orderPrice = bestBid.Price + self.tick
             Trace("Order price to submit is {}".format(orderPrice))
             orderSide = constants.osdBuy
         elif self.tradeTrigger == -1:
-            bestAsk = dispatchedInstrument.Ask
-            AssertMessage(bestAsk.IsValid, "Error! Can't set an order price due to invalid BBA")
-            Trace("Best ask value is {}".format(bestAsk.Price))
+            bestAsk = dispatchedInstrument.Bid
+            AssertMessage(bestAsk.IsValid, f"Error! Can't set {self.symbol}'s order price due to invalid BBA")
+            Trace("Best bid value is {}".format(bestAsk.Price))
             orderPrice = bestAsk.Price + self.tick
             Trace("Order price to submit is {}".format(orderPrice))
             orderSide = constants.osdSell
@@ -74,21 +76,42 @@ class SubmitOrder(StrategyInit):
                 self.celEnvironment.cqgCEL.CancelAllOrders(self.account, None, False, False, orderSide)
 
                 Trace("Waiting for {} orders to be cancelled...(Format)".format(self.leftOrderCount))
-                AssertMessage(self.eventOrderCancelled.wait(ORDER_CANCEL_TIMEOUT), "Order cancellation timeout!")
+                AssertMessage(self.eventOrderCancelled.wait(ORDER_CANCEL_TIMEOUT),
+                              f"{self.symbol}'s Order cancellation timeout!")
 
             order = win32com.client.Dispatch(self.celEnvironment.cqgCEL.CreateOrder(constants.otLimit, self.instrument,
                                                                                     self.account, self.leftOrderCount,
                                                                                     orderSide,
                                                                                     orderPrice))
             Trace("Place order")
-            order.Place()
-            Trace("Waiting for {} orders placing...".format(self.leftOrderCount))
-            AssertMessage(self.eventOrderPlaced.wait(ORDER_PLACE_TIMEOUT), "Order placing timeout!")
-            time.sleep(60)
+            try:
+                order.Place()
+            except Exception as e:
+                AssertMessage(False, f"{self.symbol}: {str(e)}")
 
+            try:
+                Trace("Waiting for {} orders placing...".format(self.leftOrderCount))
+                AssertMessage(self.eventOrderPlaced.wait(ORDER_PLACE_TIMEOUT),
+                              f"{self.symbol}'s Order placing timeout!")
+            except Exception as e:
+                Trace("Exception: {}".format(str(e)))
+                Trace("Cancel failed {} placing orders.(Format)".format(self.leftOrderCount))
+                self.celEnvironment.cqgCEL.CancelAllOrders(self.account, None, False, False, orderSide)
+
+            time.sleep(60)
             minutes_passed = minutes_passed + 1
             if self.leftOrderCount == 0:
                 break
+
+        if self.leftOrderCount > 0:
+            Trace("Cancel unfilled {} orders.(Format)".format(self.leftOrderCount))
+            self.celEnvironment.cqgCEL.CancelAllOrders(self.account, None, False, False, orderSide)
+
+            Trace("Waiting for {} orders to be cancelled...(Format)".format(self.leftOrderCount))
+            AssertMessage(self.eventOrderCancelled.wait(ORDER_CANCEL_TIMEOUT),
+                          f"{self.symbol}'s Order cancellation timeout!")
+
+        return self.leftOrderCount
 
     def Close(self):
         Trace("Logoff from GW")
@@ -127,6 +150,7 @@ class SubmitOrder(StrategyInit):
             dispatchedCQGError = win32com.client.Dispatch(cqgError)
             Trace("OnOrderChanged error: Code: {} Description: {}".format(dispatchedCQGError.Code,
                                                                           dispatchedCQGError.Description))
+            logger.error("{}: {}".format(self.symbol, dispatchedCQGError.Description))
             return
 
         dispatchedOrder = win32com.client.Dispatch(cqgOrder)
@@ -140,11 +164,12 @@ class SubmitOrder(StrategyInit):
         if self.symbol in f"{instrumentName}":
             if gwStatus.Value == constants.osFilled:
                 filledQuantity = properties(constants.opFilledQuantity)
-                self.leftOrderCount -= filledQuantity.Value
-                Trace("{} orders are filled and {} orders are left".format(filledQuantity.Value, self.leftOrderCount))
+                self.leftOrderCount -= math.fabs(filledQuantity.Value)
+                Trace("{} orders are filled and {} orders are left".format(math.fabs(filledQuantity.Value),
+                                                                           self.leftOrderCount))
             else:
                 Trace("OnOrderChanged: change type: {}; GW status: {}; Quantity: {}; Instrument: {}; Price: {};"
-                    .format(changeType, gwStatus, quantity, instrumentName, limitPrice))
+                      .format(changeType, gwStatus, quantity, instrumentName, limitPrice))
 
         if changeType != constants.ctChanged:
             return

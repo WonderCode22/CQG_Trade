@@ -1,0 +1,156 @@
+2020-07-03 23:02 ERROR: Error! Can't set F.US.KCU's order price due to invalid BBA
+2020-07-03 23:02 ERROR: Error! Can't set F.US.CTE's order price due to invalid BBA
+2020-07-03 23:03 ERROR: F.US.KCE instrument's condition doesn't meet
+2020-07-03 23:04 ERROR: F.US.DXE instrument's condition doesn't meet
+2020-07-03 23:15 ERROR: Error! Can't set F.US.CTE's order price due to invalid BBA
+2020-07-03 23:16 ERROR: Error! Can't set F.US.CTE's order price due to invalid BBA
+2020-07-03 23:25 ERROR: Error! Can't set F.US.KCU's order price due to invalid BBA
+2020-07-03 23:26 ERROR: F.US.KCE instrument's condition doesn't meet
+2020-07-03 23:26 ERROR: F.US.DXE instrument's condition doesn't meet
+2020-07-03 23:28 ERROR: Error! Can't set F.US.KCU's order price due to invalid BBA
+2020-07-03 23:29 ERROR: F.US.KCE instrument's condition doesn't meet
+2020-07-03 23:29 ERROR: F.US.DXE: Order related error occurred. 
+The order with ID '1232138787' got an error: Single trade size limit for the commodity US.DXE is 250, size of this order is 400 
+See log files for more details (try to enable DEBUG logging level to get more info).
+2020-07-03 23:29 ERROR: F.US.DXE's Order placing timeout!
+2020-07-03 23:30 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-03 23:30 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-03 23:31 ERROR: Error! Can't set F.US.KCU's order price due to invalid BBA
+2020-07-03 23:32 ERROR: F.US.KCE instrument's condition doesn't meet
+2020-07-03 23:32 ERROR: F.US.DXE: Order related error occurred. 
+The order with ID '1232099916' got an error: Insufficient margin 
+Available margin: USD284146 
+Used margin: USD88562 
+Total portfolio margin including this order: USD809612 
+This order increases margin by USD721050 
+See log files for more details (try to enable DEBUG logging level to get more info).
+2020-07-03 23:32 ERROR: F.US.DXE's Order placing timeout!
+2020-07-03 23:33 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-03 23:33 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-03 23:36 ERROR: Error! Can't set F.US.KCU's order price due to invalid BBA
+2020-07-03 23:37 ERROR: F.US.KCE instrument's condition doesn't meet
+2020-07-03 23:40 ERROR: Error! Can't set F.US.KCU's order price due to invalid BBA
+2020-07-03 23:41 ERROR: F.US.KCE instrument's condition doesn't meet
+2020-07-03 23:42 ERROR: Error! Can't set F.US.KCU's order price due to invalid BBA
+2020-07-03 23:43 ERROR: F.US.KCE instrument's condition doesn't meet
+2020-07-03 23:44 ERROR: Exception: local variable 'orderType' referenced before assignment
+2020-07-06 12:11 ERROR: Exception: (-2147221008, 'CoInitialize has not been called.', None, None)
+2020-07-06 12:11 ERROR: Job "trade_runner (trigger: date[2020-07-06 04:11:00 UTC], next run at: 2020-07-06 04:11:00 UTC)" raised an exception
+Traceback (most recent call last):
+  File "E:\CQG API\venv\lib\site-packages\apscheduler\executors\base.py", line 125, in run_job
+    retval = job.func(*job.args, **job.kwargs)
+  File "Main.py", line 98, in trade_runner
+    else:
+  File "E:\CQG API\Script\CELEnvironment.py", line 469, in Shutdown
+    self.cqgCEL.Shutdown()
+AttributeError: 'CELEnvironment' object has no attribute 'cqgCEL'
+2020-07-06 13:39 ERROR: Exception: (-2147221008, 'CoInitialize has not been called.', None, None)
+2020-07-06 13:39 ERROR: Job "trade_runner (trigger: date[2020-07-06 05:39:00 UTC], next run at: 2020-07-06 05:39:00 UTC)" raised an exception
+Traceback (most recent call last):
+  File "E:\CQG API\venv\lib\site-packages\apscheduler\executors\base.py", line 125, in run_job
+    retval = job.func(*job.args, **job.kwargs)
+  File "Main.py", line 98, in trade_runner
+    orderCelEnvironment.Shutdown()
+  File "E:\CQG API\Script\CELEnvironment.py", line 468, in Shutdown
+    self.cqgCEL.Shutdown()
+AttributeError: 'CELEnvironment' object has no attribute 'cqgCEL'
+2020-07-06 13:40 ERROR: Exception: 'COMEventClass' object has no attribute 'celEnvironment'
+2020-07-06 13:45 ERROR: Error! Can't set F.US.KCE's order price due to invalid BBA
+2020-07-06 13:45 ERROR: Exception: Error! Can't set F.US.KCE's order price due to invalid BBA
+2020-07-07 00:45 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 00:45 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 00:45 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 00:45 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 01:03 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 01:03 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 01:03 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 01:03 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 01:08 ERROR: F.US.DXE: Order related error occurred. 
+The order with ID '1232918170' got an error: Insufficient margin 
+Available margin: USD771117 
+Used margin: USD752400 
+Total portfolio margin including this order: USD815100 
+This order increases margin by USD62700 
+See log files for more details (try to enable DEBUG logging level to get more info).
+2020-07-07 01:08 ERROR: F.US.DXE: Order related error occurred. 
+The order with ID '1232918170' got an error: Insufficient margin 
+Available margin: USD771117 
+Used margin: USD752400 
+Total portfolio margin including this order: USD815100 
+This order increases margin by USD62700 
+See log files for more details (try to enable DEBUG logging level to get more info).
+2020-07-07 01:09 ERROR:  Instrument's 0.0 orders out of 10 Buy orders are remainning
+2020-07-07 01:09 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 01:09 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 01:14 ERROR: F.US.CKE Instrument resolution timeout!
+2020-07-07 01:14 ERROR: F.US.CKE Instrument resolution timeout!
+2020-07-07 01:14 ERROR: Exception: F.US.CKE Instrument resolution timeout!
+2020-07-07 01:14 ERROR: Exception: F.US.CKE Instrument resolution timeout!
+2020-07-07 01:16 ERROR: F.US.CTE: Order related error occurred. 
+The order with ID '1232947315' got an error: Insufficient margin 
+Available margin: USD771072 
+Used margin: USD752400 
+Total portfolio margin including this order: USD839850 
+This order increases margin by USD87450 
+See log files for more details (try to enable DEBUG logging level to get more info).
+2020-07-07 01:16 ERROR: F.US.CTE: Order related error occurred. 
+The order with ID '1232947315' got an error: Insufficient margin 
+Available margin: USD771072 
+Used margin: USD752400 
+Total portfolio margin including this order: USD839850 
+This order increases margin by USD87450 
+See log files for more details (try to enable DEBUG logging level to get more info).
+2020-07-07 01:16 ERROR: F.US.CTE: Order related error occurred. 
+The order with ID '1232967067' got an error: Insufficient margin 
+Available margin: USD771072 
+Used margin: USD752400 
+Total portfolio margin including this order: USD796125 
+This order increases margin by USD43725 
+See log files for more details (try to enable DEBUG logging level to get more info).
+2020-07-07 01:16 ERROR: F.US.CTE: Order related error occurred. 
+The order with ID '1232967067' got an error: Insufficient margin 
+Available margin: USD771072 
+Used margin: USD752400 
+Total portfolio margin including this order: USD796125 
+This order increases margin by USD43725 
+See log files for more details (try to enable DEBUG logging level to get more info).
+2020-07-07 01:59 ERROR: Error! Can't set F.US.AWE's order price due to invalid BBA
+2020-07-07 01:59 ERROR: Error! Can't set F.US.AWE's order price due to invalid BBA
+2020-07-07 01:59 ERROR: Exception: Error! Can't set F.US.AWE's order price due to invalid BBA
+2020-07-07 01:59 ERROR: Exception: Error! Can't set F.US.AWE's order price due to invalid BBA
+2020-07-07 02:01 ERROR: Error! Can't set F.US.KCE's order price due to invalid BBA
+2020-07-07 02:01 ERROR: Error! Can't set F.US.KCE's order price due to invalid BBA
+2020-07-07 02:01 ERROR: Exception: Error! Can't set F.US.KCE's order price due to invalid BBA
+2020-07-07 02:01 ERROR: Exception: Error! Can't set F.US.KCE's order price due to invalid BBA
+2020-07-07 10:03 ERROR: Error! Can't set F.US.KCE's order price due to invalid BBA
+2020-07-07 10:03 ERROR: Exception: Error! Can't set F.US.KCE's order price due to invalid BBA
+2020-07-07 10:03 ERROR: Error! Can't set F.US.KCE's order price due to invalid BBA
+2020-07-07 10:03 ERROR: Exception: Error! Can't set F.US.KCE's order price due to invalid BBA
+2020-07-07 10:06 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 10:06 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 10:06 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 10:06 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 10:24 ERROR: F.US.DXE's Order placing timeout!
+2020-07-07 10:24 ERROR: F.US.DXE's Order placing timeout!
+2020-07-07 10:26 ERROR: F.US.DXE's Order placing timeout!
+2020-07-07 10:26 ERROR: F.US.DXE's Order placing timeout!
+2020-07-07 14:51 ERROR: F.US.DXE's Order placing timeout!
+2020-07-07 14:51 ERROR: F.US.DXE's Order placing timeout!
+2020-07-07 14:52 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 14:52 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 14:52 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 14:52 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 14:55 ERROR: F.US.DXE's Order placing timeout!
+2020-07-07 14:55 ERROR: F.US.DXE's Order placing timeout!
+2020-07-07 14:56 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 14:56 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 14:56 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 14:56 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 15:23 ERROR: F.US.DXE's Order placing timeout!
+2020-07-07 15:23 ERROR: F.US.DXE's Order placing timeout!
+2020-07-07 15:24 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 15:24 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-07 15:24 ERROR: F.US.DXE's Order cancellation timeout!
+2020-07-07 15:24 ERROR: Exception: F.US.DXE's Order cancellation timeout!
+2020-07-14 13:49 ERROR: DXEZ20 instrument's condition doesn't meet
+2020-07-14 13:50 ERROR: DXEZ20's Order placing timeout!

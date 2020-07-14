@@ -1,3 +1,5 @@
+import logging
+from datetime import datetime, timezone
 import threading
 from threading import Thread
 
@@ -8,10 +10,17 @@ import pythoncom
 import sys
 
 win32com.client.gencache.EnsureModule('{51F35562-AEB4-4AB3-99E8-AC9666344B64}', 0, 4, 0)
+logging.basicConfig(filename='error.log',
+                    level=logging.ERROR,
+                    format="%(asctime)s %(levelname)s: %(message)s",
+                    datefmt="%Y-%m-%d %H:%M",)
+# logging.Formatter.converter = lambda *args: datetime.now(tz=timezone('UTC')).timetuple()
+logger = logging.getLogger("CQG")
 
 
 def AssertMessage(condition, message):
     if not condition:
+        logger.error(message)
         raise RuntimeError(message)
 
 
