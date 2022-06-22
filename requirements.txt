@@ -1,6 +1,6 @@
 APScheduler==3.6.3
 mccabe==0.6.1
-numpy==1.19.0
+numpy==1.22.0
 numpyencoder==0.2.0
 pandas==1.0.5
 pycodestyle==2.6.0
